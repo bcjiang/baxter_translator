@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+<package>
+  <name>translator_driver</name>
+  <version>0.1.0</version>
+  <description>
+    Driver package for Baxter_translator
+  </description>
+
+  <maintainer email="baichuan@jhu.edu">
+    Baichuan Jiang
+  </maintainer>
+  <license>BSD</license>
+  <url type="repository">
+    https://github.com/bcjiang/baxter_translator
+  </url>
+  <author>Baichuan Jiang</author>
+  <author>Morris Kraicer</author>
+  <author>Rui Shen</author>
+  <author>Yichuan Tang</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>roscpp</build_depend>
+  <build_depend>rospy</build_depend>
+  <build_depend>baxter_core_msgs</build_depend>
+  <build_depend>gazebo_ros_control</build_depend>
+  <build_depend>controller_manager_msgs</build_depend>
+
+  <run_depend>roscpp</run_depend>
+  <run_depend>rospy</run_depend>
+  <run_depend>tf2_ros</run_depend>
+  <run_depend>baxter_core_msgs</run_depend>
+  <run_depend>gazebo_ros_control</run_depend>
+  <run_depend>controller_manager_msgs</run_depend>
+  <run_depend>baxter_sim_hardware</run_depend>
+  <run_depend>gazebo_ros</run_depend>
+  <run_depend>baxter_description</run_depend>
+
+</package>

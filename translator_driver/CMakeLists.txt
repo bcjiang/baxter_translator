@@ -26,6 +26,8 @@ catkin_package(
   controller_manager_msgs
 )
 
+catkin_python_setup()
+
 # link_directories(
 #   ${GAZEBO_LIBRARY_DIRS}
 #   ${catkin_LIBRARY_DIRS}

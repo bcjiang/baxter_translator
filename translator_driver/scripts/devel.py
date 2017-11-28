@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 # This is the devel file for testing new features
 
 import argparse
@@ -11,58 +13,6 @@ from geometry_msgs.msg import (PoseStamped,Pose,Point,Quaternion)
 from std_msgs.msg import (Header,Empty)
 from baxter_core_msgs.srv import (SolvePositionIK,SolvePositionIKRequest)
 import baxter_interface
-
-def main():
-
-    rospy.init_node("ik_pick_and_place_demo")
-    # Load Gazebo Models via Spawning Services
-    # Note that the models reference is the /world frame
-    # and the IK operates with respect to the /base frame
-    load_gazebo_models()
-    # Remove models from the scene on shutdown
-    rospy.on_shutdown(delete_gazebo_models)
-    # Wait for the All Clear from emulator startup
-    rospy.wait_for_message("/robot/sim/started", Empty)
-
-    limb = 'left'
-    hover_distance = 0.15 # meters
-    # Starting Joint angles for left arm
-    starting_joint_angles = {'left_w0': 0.6699952259595108,
-                             'left_w1': 1.030009435085784,
-                             'left_w2': -0.4999997247485215,
-                             'left_e0': -1.189968899785275,
-                             'left_e1': 1.9400238130755056,
-                             'left_s0': -0.08000397926829805,
-                             'left_s1': -0.9999781166910306}
-    left_arm = BaxterArm(limb, hover_distance)
-    # An orientation for gripper fingers to be overhead and parallel to the obj
-    overhead_orientation = Quaternion(
-                             x=-0.0249590815779,
-                             y=0.999649402929,
-                             z=0.00737916180073,
-                             w=0.00486450832011)
-    block_poses = list()
-    # The Pose of the block in its initial location.
-    # You may wish to replace these poses with estimates
-    # from a perception node.
-    block_poses.append(Pose(
-        position=Point(x=0.7, y=0.15, z=0.05),
-        orientation=overhead_orientation))
-    # Feel free to add additional desired poses for the object.
-    # Each additional pose will get its own pick and place.
-    block_poses.append(Pose(
-        position=Point(x=0.75, y=0.0, z=0.05),
-        orientation=overhead_orientation))
-    # Move to the desired starting angles
-    left_arm.move_to_start(starting_joint_angles)
-    idx = 0
-    while not rospy.is_shutdown():
-        left_arm.move_to_cart(block_poses[idx])
-        left_arm.move_to_cart(block_poses[idx+1])
-    return 0
-
-if __name__ == '__main__':
-    sys.exit(main())
 
 def load_gazebo_models(table_pose=Pose(position=Point(x=1.0, y=0.0, z=0.0)),
                        table_reference_frame="world",
@@ -95,6 +45,17 @@ def load_gazebo_models(table_pose=Pose(position=Point(x=1.0, y=0.0, z=0.0)),
     except rospy.ServiceException, e:
         rospy.logerr("Spawn URDF service call failed: {0}".format(e))
 
+def delete_gazebo_models():
+    # This will be called on ROS Exit, deleting Gazebo models
+    # Do not wait for the Gazebo Delete Model service, since
+    # Gazebo should already be running. If the service is not
+    # available since Gazebo has been killed, it is fine to error out
+    try:
+        delete_model = rospy.ServiceProxy('/gazebo/delete_model', DeleteModel)
+        resp_delete = delete_model("cafe_table")
+        resp_delete = delete_model("block")
+    except rospy.ServiceException, e:
+        rospy.loginfo("Delete Model service call failed: {0}".format(e))
 
 class BaxterArm(object):
     def __init__(self, limb, hover_distance = 0.15, verbose=True):
@@ -174,5 +135,57 @@ class BaxterArm(object):
         joint_angles = self.ik_request(target)
         self._guarded_move_to_joint_position(joint_angles)
 
+
+def main():
+
+    rospy.init_node("ik_pick_and_place_demo")
+    # Load Gazebo Models via Spawning Services
+    # Note that the models reference is the /world frame
+    # and the IK operates with respect to the /base frame
+    load_gazebo_models()
+    # Remove models from the scene on shutdown
+    rospy.on_shutdown(delete_gazebo_models)
+    # Wait for the All Clear from emulator startup
+    rospy.wait_for_message("/robot/sim/started", Empty)
+
+    limb = 'left'
+    hover_distance = 0.15 # meters
+    # Starting Joint angles for left arm
+    starting_joint_angles = {'left_w0': 0.6699952259595108,
+                             'left_w1': 1.030009435085784,
+                             'left_w2': -0.4999997247485215,
+                             'left_e0': -1.189968899785275,
+                             'left_e1': 1.9400238130755056,
+                             'left_s0': -0.08000397926829805,
+                             'left_s1': -0.9999781166910306}
+    left_arm = BaxterArm(limb, hover_distance)
+    # An orientation for gripper fingers to be overhead and parallel to the obj
+    overhead_orientation = Quaternion(
+                             x=-0.0249590815779,
+                             y=0.999649402929,
+                             z=0.00737916180073,
+                             w=0.00486450832011)
+    block_poses = list()
+    # The Pose of the block in its initial location.
+    # You may wish to replace these poses with estimates
+    # from a perception node.
+    block_poses.append(Pose(
+        position=Point(x=0.7, y=0.15, z=0.05),
+        orientation=overhead_orientation))
+    # Feel free to add additional desired poses for the object.
+    # Each additional pose will get its own pick and place.
+    block_poses.append(Pose(
+        position=Point(x=0.75, y=0.0, z=0.05),
+        orientation=overhead_orientation))
+    # Move to the desired starting angles
+    left_arm.move_to_start(starting_joint_angles)
+    idx = 0
+    while not rospy.is_shutdown():
+        left_arm.move_to_cart(block_poses[idx])
+        left_arm.move_to_cart(block_poses[idx+1])
+    return 0
+
+if __name__ == '__main__':
+    sys.exit(main())
 
 

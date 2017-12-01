@@ -6,6 +6,7 @@ import numpy as np
 from std_msgs.msg import String
 import rospy
 #from matplotlib import pypltsplt
+from geometry_msgs.msg import (PoseStamped,Pose,Point,Quaternion)
 
 # some change
 #kmnfwkonf
@@ -15,7 +16,7 @@ cv2.namedWindow('Depth')
 
 def main():
     keep_running = True
-    pub = rospy.Publisher('chatter', String, queue_size=10)
+    pub = rospy.Publisher('detected_hand', Pose, queue_size=5)
     rospy.init_node('translator_vision', anonymous=True)
     rate = rospy.Rate(60) # Hz
 
@@ -28,10 +29,18 @@ def main():
         cv2.circle(depth_frame, closest, radius, (0,255,0),4)
         cv2.imshow('Depth', depth_frame)
 
-        hello_str = "hello world %s" % rospy.get_time()
-        rospy.loginfo(hello_str)
-        pub.publish(hello_str)
-        
+        # hello_str = "hello world %s" % rospy.get_time()
+        # rospy.loginfo(hello_str)
+        overhead_orientation = Quaternion(
+                             x=-0.0249590815779,
+                             y=0.999649402929,
+                             z=0.00737916180073,
+                             w=0.00486450832011)
+        cur_pose = Pose(
+        position=Point(x=closest[0], y=closest[1], z=0.05),
+        orientation=overhead_orientation)
+        pub.publish(cur_pose)
+
         if cv2.waitKey(10) == 27:
             keep_running = False
 

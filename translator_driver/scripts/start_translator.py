@@ -64,6 +64,7 @@ class BaxterArm(object):
         self._verbose = verbose # bool
         self._limb = baxter_interface.Limb(limb)
         self._gripper = baxter_interface.Gripper(limb)
+        self.hand_target = Pose(position=Point(x=0, y=0, z=0),orientation=Quaternion(0,0,0,1))
         ns = "ExternalTools/" + limb + "/PositionKinematicsNode/IKService"
         self._iksvc = rospy.ServiceProxy(ns, SolvePositionIK)
         rospy.wait_for_service(ns, 5.0)
@@ -93,7 +94,7 @@ class BaxterArm(object):
 
     def _guarded_move_to_joint_position(self, joint_angles):
         if joint_angles:
-            self._limb.move_to_joint_positions(joint_angles)
+            self._limb.move_to_joint_positions(joint_angles, timeout=1.0)
         else:
             rospy.logerr("No Joint Angles provided for move_to_joint_positions. Staying put.")
 
@@ -135,6 +136,9 @@ class BaxterArm(object):
         joint_angles = self.ik_request(target)
         self._guarded_move_to_joint_position(joint_angles)
 
+    def hand_cb(self, data):
+        self.hand_target = data
+        # print self.hand_target
 
 def main():
 
@@ -165,25 +169,45 @@ def main():
                              y=0.999649402929,
                              z=0.00737916180073,
                              w=0.00486450832011)
+    rospy.Subscriber("/detected_hand", Pose, left_arm.hand_cb)
     block_poses = list()
-    # The Pose of the block in its initial location.
+    # The Pose of the block in its initial location.3
     # You may wish to replace these poses with estimates
     # from a perception node.
     block_poses.append(Pose(
-        position=Point(x=0.7, y=0.15, z=0.05),
+        position=Point(x=0.5, y=0.1, z=0.2),
         orientation=overhead_orientation))
+    block_poses.append(Pose(
+        position=Point(x=0.5, y=0.6, z=0.2),
+        orientation=overhead_orientation))
+    # x: 0.4~0.8, y: -0.2~0.7, z: -0.1~0.3, 
+
     # Feel free to add additional desired poses for the object.
     # Each additional pose will get its own pick and place.
-    block_poses.append(Pose(
-        position=Point(x=0.75, y=0.0, z=0.05),
-        orientation=overhead_orientation))
+    # block_poses.append(Pose(
+    #     position=Point(x=0.75, y=0.0, z=0.05),
+    #     orientation=overhead_orientation))
+    # block_poses.append(Pose(
+    #     position=Point(x=0.75, y=0.0, z=0.15),
+    #     orientation=overhead_orientation))
+    # block_poses.append(Pose(
+    #     position=Point(x=0.35, y=0.0, z=0.15),
+    #     orientation=overhead_orientation))
     # Move to the desired starting angles
     left_arm.move_to_start(starting_joint_angles)
     idx = 0
+    # left_arm.move_to_cart(block_poses[idx])
     while not rospy.is_shutdown():
-        left_arm.move_to_cart(block_poses[idx])
-        left_arm.move_to_cart(block_poses[idx+1])
+        # left_arm.move_to_cart(block_poses[idx])
+        # left_arm.move_to_cart(block_poses[idx+1])
+        if left_arm.hand_target.position.x < 0.8 and left_arm.hand_target.position.x > 0.4 \
+            and left_arm.hand_target.position.y < 0.7 and left_arm.hand_target.position.y > -0.2 \
+            and left_arm.hand_target.position.z < 0.3 and left_arm.hand_target.position.z > -0.1:
+            left_arm.move_to_cart(left_arm.hand_target)
+            print "--------------robot moved--------------"
+            print left_arm.hand_target
     return 0
+
 
 if __name__ == '__main__':
     sys.exit(main())
